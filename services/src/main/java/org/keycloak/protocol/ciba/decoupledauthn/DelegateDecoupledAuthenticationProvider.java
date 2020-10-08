@@ -151,9 +151,9 @@ public class DelegateDecoupledAuthenticationProvider extends DecoupledAuthentica
         if (authRequestedUserHint.equals(CIBAConstants.LOGIN_HINT)) {
             user = resolver.getUserFromLoginHint(request.getLoginHint());
         } else if (authRequestedUserHint.equals(CIBAConstants.ID_TOKEN_HINT)) {
-            user = resolver.getUserFromLoginHint(request.getIdTokenHint());
+            user = resolver.getUserFromIdTokenHint(request.getIdTokenHint());
         } else if (authRequestedUserHint.equals(CIBAConstants.LOGIN_HINT_TOKEN)) {
-            user = resolver.getUserFromLoginHint(request.getLoginHintToken());
+            user = resolver.getUserFromLoginHintToken(request.getLoginHintToken());
         } else {
             throw new RuntimeException("CIBA invalid Authentication Requested User Hint.");
         }
@@ -184,7 +184,7 @@ public class DelegateDecoupledAuthenticationProvider extends DecoupledAuthentica
             if (status != 200) {
                 // To terminate CIBA flow, set Auth Result as unknown
                 DecoupledAuthnResult decoupledAuthnResult = new DecoupledAuthnResult(Time.currentTime() + expiresIn, DecoupledAuthStatus.UNKNOWN);
-                DecoupledAuthnResultParser.persistDecoupledAuthnResult(session, authResultId.toString(), decoupledAuthnResult, Time.currentTime() + expiresIn);
+                DecoupledAuthnResultParser.persistDecoupledAuthnResult(session, authResultId, decoupledAuthnResult, Time.currentTime() + expiresIn);
             }
         } catch (IOException ioe) {
             throw new RuntimeException("Decoupled Authn Request URI Access failed.", ioe);
