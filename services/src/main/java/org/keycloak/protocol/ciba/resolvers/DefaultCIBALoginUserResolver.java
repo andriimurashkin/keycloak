@@ -5,8 +5,6 @@ import org.keycloak.TokenVerifier;
 import org.keycloak.common.VerificationException;
 import org.keycloak.crypto.SignatureProvider;
 import org.keycloak.crypto.SignatureVerifierContext;
-import org.keycloak.jose.jws.JWSInput;
-import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
@@ -64,17 +62,24 @@ public class DefaultCIBALoginUserResolver implements CIBALoginUserResolver {
     @Override
     public UserModel getUserFromIdTokenHint(String idTokenHint) {
         try {
-            JWSInput input = new JWSInput(idTokenHint);
-            IDToken token = input.readJsonContent(IDToken.class);
+            TokenVerifier<IDToken> verifier = TokenVerifier.create(idTokenHint, IDToken.class)
+                                                             .realmUrl(Urls.realmIssuer(session.getContext().getUri().getBaseUri(),
+                                                                                        session.getContext().getRealm().getName()))
+                                                             .audience(session.getContext().getClient().getClientId());
+
+            SignatureVerifierContext verifierContext = session.getProvider(SignatureProvider.class, verifier.getHeader().getAlgorithm().name()).verifier(verifier.getHeader().getKeyId());
+            verifier.verifierContext(verifierContext);
+
+            IDToken token = verifier.verify().getToken();
 
             UserModel userModel = getUserFromInfoUsedByAuthentication(token.getPreferredUsername());
             if (userModel == null) {
                 throw new ErrorResponseException(CIBAErrorCodes.UNKNOWN_USER_ID, "no user found", Response.Status.BAD_REQUEST);
             }
             return userModel;
-        } catch (JWSInputException e) {
+        } catch (VerificationException e) {
             logger.warn("Failed verify id token", e);
-            throw new ErrorResponseException(CIBAErrorCodes.INVALID_REQUEST, "token invalid", Response.Status.BAD_REQUEST);
+            throw new ErrorResponseException(CIBAErrorCodes.INVALID_REQUEST, "Token verification failed", Response.Status.BAD_REQUEST);
         }
     }
 

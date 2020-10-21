@@ -1240,6 +1240,8 @@ public class CIBATest extends AbstractTestRealmKeycloakTest {
         try {
             final String username = "nutzername-rot";
             IDToken idTokenHint = new IDToken();
+            idTokenHint.issuer("https://localhost:8543/auth/realms/test");
+            idTokenHint.addAudience(TEST_CLIENT_NAME);
             idTokenHint.setPreferredUsername(username);
 
             // prepare CIBA settings
