@@ -87,7 +87,7 @@ public class DelegateDecoupledAuthenticationProvider extends DecoupledAuthentica
         }
 
         DecoupledAuthId decoupledAuthIdData = parseResult.decoupledAuthIdData();
-        authResultId = decoupledAuthIdData.getAuthResultId().toString();
+        authResultId = decoupledAuthIdData.getAuthResultId();
         scope = decoupledAuthIdData.getScope();
         expiration = decoupledAuthIdData.getExpiration();
         userSessionIdWillBeCreated = decoupledAuthIdData.getUserSessionIdWillBeCreated();
@@ -164,10 +164,8 @@ public class DelegateDecoupledAuthenticationProvider extends DecoupledAuthentica
         defaultScopesMap.forEach((key, value)->{if (value.isDisplayOnConsentScreen()) scopeBuilder.append(value.getName()).append(" ");});
         String defaultClientScope = scopeBuilder.toString();
 
-        String userIdToBeAuthenticated = session.users().getUserByUsername(request.getLoginHint(), realm).getId();
-
         DecoupledAuthId decoupledAuthIdData = new DecoupledAuthId(Time.currentTime() + expiresIn, request.getScope(),
-                userSessionIdWillBeCreated, userIdToBeAuthenticated, client.getClientId(), authResultId);
+                userSessionIdWillBeCreated, user.getId(), client.getClientId(), authResultId);
         String decoupledAuthId = persistDecoupledAuthId(session, decoupledAuthIdData, expiresIn);
 
         logger.info("  decoupledAuthnRequestUri = " + decoupledAuthenticationRequestUri);
