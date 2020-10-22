@@ -39,7 +39,14 @@ import org.keycloak.broker.provider.util.SimpleHttp;
 import org.keycloak.common.VerificationException;
 import org.keycloak.common.util.KeystoreUtil;
 import org.keycloak.constants.AdapterConstants;
-import org.keycloak.crypto.*;
+import org.keycloak.crypto.Algorithm;
+import org.keycloak.crypto.AsymmetricSignatureSignerContext;
+import org.keycloak.crypto.AsymmetricSignatureVerifierContext;
+import org.keycloak.crypto.KeyUse;
+import org.keycloak.crypto.KeyWrapper;
+import org.keycloak.crypto.ServerECDSASignatureSignerContext;
+import org.keycloak.crypto.ServerECDSASignatureVerifierContext;
+import org.keycloak.crypto.SignatureSignerContext;
 import org.keycloak.jose.jwk.JSONWebKeySet;
 import org.keycloak.jose.jwk.JWK;
 import org.keycloak.jose.jwk.JWKParser;
@@ -78,7 +85,11 @@ import java.nio.charset.Charset;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import static org.keycloak.testsuite.admin.Users.getPasswordOf;
@@ -681,14 +692,14 @@ public class OAuthClient {
     }
 
     public AuthenticationRequestAcknowledgement doBackchannelAuthenticationRequest(String clientSecret, String userid, String bindingMessage) throws Exception {
-        return doBackchannelAuthenticationRequest(this.clientId, clientSecret, userid, CIBAConstants.LOGIN_HINT, bindingMessage);
+        return doBackchannelAuthenticationRequest(this.clientId, clientSecret, userid, CIBAConstants.LOGIN_HINT, bindingMessage, null);
     }
 
-    public AuthenticationRequestAcknowledgement doBackchannelAuthenticationRequest(String clientId, String clientSecret, String userid, String bindingMessage) throws Exception {
-        return doBackchannelAuthenticationRequest(clientId, clientSecret, userid, CIBAConstants.LOGIN_HINT, bindingMessage);
+    public AuthenticationRequestAcknowledgement doBackchannelAuthenticationRequest(String clientId, String clientSecret, String userid, String bindingMessage, String userCode) throws Exception {
+        return doBackchannelAuthenticationRequest(clientId, clientSecret, userid, CIBAConstants.LOGIN_HINT, bindingMessage, userCode);
     }
 
-    public AuthenticationRequestAcknowledgement doBackchannelAuthenticationRequest(String clientId, String clientSecret, String userid, String authRequestedUserHint, String bindingMessage) throws Exception {
+    public AuthenticationRequestAcknowledgement doBackchannelAuthenticationRequest(String clientId, String clientSecret, String userid, String authRequestedUserHint, String bindingMessage, String userCode) throws Exception {
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
             System.out.println("--- Backchannel Authentication Endpoint = " + getBackchannelAuthenticationUrl());
             System.out.println("--- Backchannel authRequestedUserHint = " + authRequestedUserHint);
@@ -710,6 +721,11 @@ public class OAuthClient {
                 }
             }
             parameters.add(new BasicNameValuePair(CIBAConstants.BINDING_MESSAGE, bindingMessage));
+
+            if (userCode != null) {
+                parameters.add(new BasicNameValuePair(CIBAConstants.USER_CODE, userCode));
+            }
+
             if (scope != null) {
                 parameters.add(new BasicNameValuePair(OAuth2Constants.SCOPE, OAuth2Constants.SCOPE_OPENID + " " + scope));
             } else {
